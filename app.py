@@ -10,7 +10,13 @@ from models import db, User, Category, Product, Neighborhood, Order, OrderItem
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gordin_lanches.db'
+
+# Vercel's filesystem is read-only, except for /tmp.
+if os.environ.get('VERCEL') == '1':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/gordin_lanches.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gordin_lanches.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
