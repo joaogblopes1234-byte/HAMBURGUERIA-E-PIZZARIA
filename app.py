@@ -11,11 +11,14 @@ from models import db, User, Category, Product, Neighborhood, Order, OrderItem
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 
-# Vercel's filesystem is mostly read-only.
-# We try to use /tmp/ first, but if anything fails we fallback to memory.
+# Vercel's filesystem is completely locked down.
+# We MUST use an in-memory database to prevent 500 crashes on boot.
 import os
-db_path = '/tmp/gordin_lanches.db' if os.environ.get('VERCEL') else 'gordin_lanches.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+if os.environ.get('VERCEL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gordin_lanches.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -180,12 +183,7 @@ def init_db():
         raise e
 
 with app.app_context():
-    try:
-        init_db()
-    except Exception as e:
-        # Fallback to in-memory database on Vercel deployment crash
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        init_db()
+    init_db()
 
 if __name__ == '__main__':
     app.run(debug=True)
